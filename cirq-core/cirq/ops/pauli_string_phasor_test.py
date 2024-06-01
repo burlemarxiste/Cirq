@@ -15,6 +15,7 @@
 import itertools
 import pytest
 import numpy as np
+import scipy.linalg
 import sympy
 
 import cirq
@@ -704,3 +705,80 @@ def test_gate_str():
         ** -0.5
     )
     assert str(gate) == 'exp(-iπ0.25*+ZYX)'
+
+
+def _exp_pauli_string(pauli_string: str, theta: float):
+    """
+    Returns exp(j theta s) where s is a Pauli string, represented as a string
+    containing of I, X, Y or Z.
+    """
+    i_u = np.eye(2, 2, dtype=np.cdouble)
+    x_u = np.ones((2, 2), dtype=np.cdouble) - i_u
+    z_u = np.diag(np.array([1.0, -1.0], dtype=np.cdouble))
+    y_u = -1.0j * z_u @ x_u
+    pauli_u = {'I': i_u, 'X': x_u, 'Y': y_u, 'Z': z_u}
+    pauli_string_u = 1
+    for op in pauli_string:
+        pauli_string_u = np.kron(pauli_string_u, pauli_u[op])
+    return scipy.linalg.expm(1j * theta * pauli_string_u)
+
+
+def _enumerate_pauli_strings(max_length, dense=False):
+    gates = 'IXYZ' if dense else 'XYZ'
+    b = len(gates)
+    for l in range(1, max_length + 1):
+        for code in range(b**l):
+            yield ''.join(gates[int(code / b**k) % b] for k in range(l))
+
+
+def test_unitary_with_extra_qubits():
+    qubits = cirq.LineQubit.range(3)
+    q0, q1, q2 = qubits
+    exp_xii_pi4 = cirq.PauliStringPhasor(
+        cirq.X(q0), qubits=qubits, exponent_neg=-1 / 4, exponent_pos=1 / 4
+    )
+    np.testing.assert_allclose(cirq.unitary(exp_xii_pi4), _exp_pauli_string('XII', np.pi / 4))
+
+    exp_xzi_pi4 = cirq.PauliStringPhasor(
+        cirq.X(q0) * cirq.Z(q1), qubits=qubits, exponent_neg=-1 / 4, exponent_pos=1 / 4
+    )
+    np.testing.assert_allclose(cirq.unitary(exp_xzi_pi4), _exp_pauli_string('XZI', np.pi / 4))
+
+    exp_ixi_pi4 = cirq.PauliStringPhasor(
+        cirq.X(q1), qubits=qubits, exponent_neg=-1 / 4, exponent_pos=1 / 4
+    )
+    np.testing.assert_allclose(cirq.unitary(exp_ixi_pi4), _exp_pauli_string('IXI', np.pi / 4))
+
+
+def test_global_phase_shift():
+    qubits = cirq.LineQubit.range(3)
+    q0 = qubits[0]
+    pure_phase = cirq.PauliStringPhasor(
+        cirq.X(q0) * cirq.X(q0), qubits=qubits, exponent_neg=-1 / 4, exponent_pos=1 / 4
+    )
+    np.testing.assert_allclose(cirq.unitary(pure_phase), _exp_pauli_string('III', np.pi / 4))
+
+
+def test_all_small_pauli_strings():
+    for s in _enumerate_pauli_strings(4, dense=True):
+        u = cirq.unitary(
+            cirq.PauliStringPhasorGate(
+                cirq.DensePauliString(s), exponent_neg=1 / 3, exponent_pos=-1 / 3
+            ).on(*cirq.LineQubit.range(len(s)))
+        )
+        expected_u = _exp_pauli_string(s, -np.pi / 3)
+        np.testing.assert_allclose(u, expected_u)
+
+
+def test_controlled_phase_shift():
+    q1, q2, q3 = tuple(cirq.LineQubit.range(3))
+    controlled_phase_shift = (
+        cirq.PauliStringPhasorGate(
+            cirq.DensePauliString('II'), exponent_neg=-1 / 4, exponent_pos=1 / 4
+        )
+        .on(q2, q3)
+        .controlled_by(q1)
+    )
+    phi = np.exp(1j * np.pi / 4)
+    expected_u = np.diag([1, 1, 1, 1, phi, phi, phi, phi])
+    np.testing.assert_allclose(cirq.unitary(controlled_phase_shift), expected_u)

@@ -26,6 +26,7 @@ from typing import (
 
 import numbers
 
+import numpy as np
 import sympy
 
 from cirq import value, protocols
@@ -34,6 +35,8 @@ from cirq.ops import (
     raw_types,
     common_gates,
     gate_operation,
+    global_phase_op,
+    identity,
     dense_pauli_string as dps,
     pauli_string as ps,
     pauli_gates,
@@ -354,21 +357,33 @@ class PauliStringPhasorGate(raw_types.Gate):
     def _decompose_(self, qubits: Sequence['cirq.Qid']) -> 'cirq.OP_TREE':
         if len(self.dense_pauli_string) <= 0:
             return
-        any_qubit = qubits[0]
-        to_z_ops = op_tree.freeze_op_tree(self._to_z_basis_ops(qubits))
-        xor_decomp = tuple(xor_nonlocal_decompose(qubits, any_qubit))
-        yield to_z_ops
-        yield xor_decomp
 
-        if self.exponent_neg:
-            yield pauli_gates.Z(any_qubit) ** self.exponent_neg
-        if self.exponent_pos:
-            yield pauli_gates.X(any_qubit)
-            yield pauli_gates.Z(any_qubit) ** self.exponent_pos
-            yield pauli_gates.X(any_qubit)
+        acted_upon_qubits = self.dense_pauli_string.on(*qubits).qubits
+        acted_upon_qubit_set = set(acted_upon_qubits)
+        identity_qubit_set = set(qubits) - acted_upon_qubit_set
 
-        yield protocols.inverse(xor_decomp)
-        yield protocols.inverse(to_z_ops)
+        if acted_upon_qubit_set:
+            any_qubit = acted_upon_qubits[0]
+            to_z_ops = op_tree.freeze_op_tree(self._to_z_basis_ops(qubits))
+            xor_decomp = tuple(xor_nonlocal_decompose(acted_upon_qubits, any_qubit))
+            yield to_z_ops
+            yield xor_decomp
+
+            if self.exponent_neg:
+                yield pauli_gates.Z(any_qubit) ** self.exponent_neg
+            if self.exponent_pos:
+                yield pauli_gates.X(any_qubit)
+                yield pauli_gates.Z(any_qubit) ** self.exponent_pos
+                yield pauli_gates.X(any_qubit)
+
+            yield protocols.inverse(xor_decomp)
+            yield protocols.inverse(to_z_ops)
+
+        if identity_qubit_set:
+            for q in identity_qubit_set:
+                yield identity.I(q)
+            if not acted_upon_qubit_set:
+                yield global_phase_op.GlobalPhaseGate(np.exp(1j * self.exponent_pos * np.pi))()
 
     def _trace_distance_bound_(self) -> float:
         if len(self.dense_pauli_string) == 0:
