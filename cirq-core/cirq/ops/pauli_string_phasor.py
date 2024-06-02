@@ -201,7 +201,13 @@ class PauliStringPhasor(gate_operation.GateOperation):
             return '[I]'
 
         syms = tuple(sym(qubit) for qubit in qubits)
-        return protocols.CircuitDiagramInfo(wire_symbols=syms, exponent=self.exponent_relative)
+        exponent = self.exponent_relative
+        if all(not qubit in self.pauli_string for qubit in qubits):
+            # We use the "root of unit convention" in the diagram display:
+            # I^4 denotes an identity matrix whose diagonal elements are
+            # e^(2 i pi / 4)
+            exponent = value.canonicalize_half_turns(self.exponent_pos / 2)
+        return protocols.CircuitDiagramInfo(wire_symbols=syms, exponent=exponent)
 
     def pass_operations_over(
         self, ops: Iterable[raw_types.Operation], after_to_before: bool = False

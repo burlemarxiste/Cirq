@@ -782,3 +782,30 @@ def test_controlled_phase_shift():
     phi = np.exp(1j * np.pi / 4)
     expected_u = np.diag([1, 1, 1, 1, phi, phi, phi, phi])
     np.testing.assert_allclose(cirq.unitary(controlled_phase_shift), expected_u)
+
+
+def test_circuit_diagram():
+    q1, q2, q3 = tuple(cirq.LineQubit.range(3))
+    exp_xyz = cirq.PauliStringPhasorGate(dps_xyz, exponent_neg=-1 / 4, exponent_pos=1 / 4).on(
+        q1, q2, q3
+    )
+    assert (
+        str(cirq.Circuit(exp_xyz))
+        == """\
+0: ───[X]────────
+      │
+1: ───[Y]────────
+      │
+2: ───[Z]^-0.5───"""
+    )
+
+    exp_ii = cirq.PauliStringPhasorGate(
+        cirq.DensePauliString('II'), exponent_neg=-1 / 4, exponent_pos=1 / 4
+    ).on(q1, q2)
+    assert (
+        str(cirq.Circuit(exp_ii))
+        == """\
+0: ───[I]─────────
+      │
+1: ───[I]^(1/8)───"""
+    )
