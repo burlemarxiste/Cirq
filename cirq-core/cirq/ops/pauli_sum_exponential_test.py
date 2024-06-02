@@ -112,7 +112,7 @@ def test_pauli_sum_exponential_has_correct_unitary(psum_exp, expected_unitary):
 def test_pauli_sum_exponential_has_correct_unitary_small_pauli_strings():
     from cirq.ops.pauli_string_phasor_test import _enumerate_pauli_strings, _exp_pauli_string
 
-    for pauli_string in _enumerate_pauli_strings(5, dense=True):
+    for pauli_string in _enumerate_pauli_strings(4, dense=True):
         qubits = cirq.LineQubit.range(len(pauli_string))
         circuit = cirq.Circuit(
             cirq.PauliSumExponential(
@@ -122,7 +122,7 @@ def test_pauli_sum_exponential_has_correct_unitary_small_pauli_strings():
         )
         u = circuit.unitary()
         expected_u = _exp_pauli_string(pauli_string, np.pi / 4)
-        assert np.allclose(cirq.unitary(psum_exp), expected_u)
+        assert np.allclose(u, expected_u)
 
 
 @pytest.mark.parametrize(

@@ -708,8 +708,7 @@ def test_gate_str():
 
 
 def _exp_pauli_string(pauli_string: str, theta: float):
-    """
-    Returns exp(j theta s) where s is a Pauli string, represented as a string
+    """Returns exp(j theta s) where s is a Pauli string, represented as a string
     containing of I, X, Y or Z.
     """
     i_u = np.eye(2, 2, dtype=np.cdouble)
@@ -733,7 +732,7 @@ def _enumerate_pauli_strings(max_length, dense=False):
 
 def test_unitary_with_extra_qubits():
     qubits = cirq.LineQubit.range(3)
-    q0, q1, q2 = qubits
+    q0, q1, _ = qubits
     exp_xii_pi4 = cirq.PauliStringPhasor(
         cirq.X(q0), qubits=qubits, exponent_neg=-1 / 4, exponent_pos=1 / 4
     )
