@@ -355,9 +355,6 @@ class PauliStringPhasorGate(raw_types.Gate):
         return self.dense_pauli_string.on(*qubits).to_z_basis_ops()
 
     def _decompose_(self, qubits: Sequence['cirq.Qid']) -> 'cirq.OP_TREE':
-        if len(self.dense_pauli_string) <= 0:
-            return
-
         acted_upon_qubits = self.dense_pauli_string.on(*qubits).qubits
         acted_upon_qubit_set = set(acted_upon_qubits)
         identity_qubit_set = set(qubits) - acted_upon_qubit_set
@@ -382,8 +379,8 @@ class PauliStringPhasorGate(raw_types.Gate):
         if identity_qubit_set:
             for q in identity_qubit_set:
                 yield identity.I(q)
-            if not acted_upon_qubit_set:
-                yield global_phase_op.GlobalPhaseGate(np.exp(1j * self.exponent_pos * np.pi))()
+        if not acted_upon_qubit_set:
+            yield global_phase_op.GlobalPhaseGate(np.exp(1j * self.exponent_pos * np.pi))()
 
     def _trace_distance_bound_(self) -> float:
         if len(self.dense_pauli_string) == 0:
