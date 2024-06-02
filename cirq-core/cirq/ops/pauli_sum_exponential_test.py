@@ -101,11 +101,28 @@ def test_pauli_sum_exponential_parameterized_matrix_raises():
             cirq.PauliSumExponential(2j * cirq.X(q0) + 3j * cirq.Z(q1), np.pi / 2),
             np.array([[1j, 0, 0, 0], [0, -1j, 0, 0], [0, 0, 1j, 0], [0, 0, 0, -1j]]),
         ),
+        (cirq.PauliSumExponential(cirq.X(q0) * cirq.X(q0), np.pi / 2), np.array([[1j]])),
     ),
 )
 def test_pauli_sum_exponential_has_correct_unitary(psum_exp, expected_unitary):
     assert cirq.has_unitary(psum_exp)
     assert np.allclose(cirq.unitary(psum_exp), expected_unitary)
+
+
+def test_pauli_sum_exponential_has_correct_unitary_small_pauli_strings():
+    from cirq.ops.pauli_string_phasor_test import _enumerate_pauli_strings, _exp_pauli_string
+
+    for pauli_string in _enumerate_pauli_strings(5, dense=True):
+        qubits = cirq.LineQubit.range(len(pauli_string))
+        circuit = cirq.Circuit(
+            cirq.PauliSumExponential(
+                cirq.DensePauliString(pauli_string)(*qubits), exponent=np.pi / 4
+            ),
+            [cirq.I(q) for q, op in zip(list(qubits), pauli_string) if op == 'I'],
+        )
+        u = circuit.unitary()
+        expected_u = _exp_pauli_string(pauli_string, np.pi / 4)
+        assert np.allclose(cirq.unitary(psum_exp), expected_u)
 
 
 @pytest.mark.parametrize(
