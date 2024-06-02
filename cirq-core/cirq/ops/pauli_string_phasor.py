@@ -203,9 +203,9 @@ class PauliStringPhasor(gate_operation.GateOperation):
         syms = tuple(sym(qubit) for qubit in qubits)
         exponent = self.exponent_relative
         if all(not qubit in self.pauli_string for qubit in qubits):
-            # We use the "root of unit convention" in the diagram display:
-            # I^4 denotes an identity matrix whose diagonal elements are
-            # e^(2 i pi / 4)
+            # We use a "root of unity convention in the diagram display:
+            # I^n denotes an identity matrix whose diagonal elements are
+            # e^(2 i pi / n)
             exponent = value.canonicalize_half_turns(self.exponent_pos / 2)
         return protocols.CircuitDiagramInfo(wire_symbols=syms, exponent=exponent)
 

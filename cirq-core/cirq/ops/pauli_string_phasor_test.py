@@ -709,7 +709,7 @@ def test_gate_str():
 
 def _exp_pauli_string(pauli_string: str, theta: float):
     """Returns exp(j theta s) where s is a Pauli string, represented as a string
-    containing of I, X, Y or Z.
+    containing I, X, Y or Z.
     """
     i_u = np.eye(2, 2, dtype=np.cdouble)
     x_u = np.ones((2, 2), dtype=np.cdouble) - i_u
