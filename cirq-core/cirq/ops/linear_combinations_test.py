@@ -1178,7 +1178,7 @@ def test_pauli_sum_consistent_qubit_order():
       ps_1 = cirq.DensePauliString(str_1).on(q0, q1)
       ps_2 = cirq.DensePauliString(str_2).on(q2, q1, q3)
       # This is equivalent to ps_2, but with the qubits in ascending order.
-      # We expected the term of the sum to have the qubits in this order.
+      # We expect each term of the sum to have the qubits sorted in this order.
       str_2_sorted = str_2[1] + str_2[0] + str_2[2]
       ps_2_sorted = cirq.DensePauliString(str_2_sorted).on(q1, q2, q3)
 
