@@ -1173,6 +1173,27 @@ def test_pauli_sum_pow():
     assert psum7copy == psum7
 
 
+def test_pauli_sum_consistent_qubit_order():
+    for str_1, str_2 in [("XY", "YYZ"), ("YX", "ZYZ")]:
+      ps_1 = cirq.DensePauliString(str_1).on(q0, q1)
+      ps_2 = cirq.DensePauliString(str_2).on(q2, q1, q3)
+      # This is equivalent to ps_2, but with the qubits in ascending order.
+      # We expected the term of the sum to have the qubits in this order.
+      str_2_sorted = str_2[1] + str_2[0] + str_2[2]
+      ps_2_sorted = cirq.DensePauliString(str_2_sorted).on(q1, q2, q3)
+
+      terms = list(cirq.PauliSum() + ps_1 + ps_2)
+
+      assert terms[0].dense(terms[0].qubits) == ps_1.dense(ps_1.qubits)
+      assert terms[1].dense(terms[1].qubits) == ps_2_sorted.dense(
+          ps_2_sorted.qubits)
+      assert str(ps_1), str(terms[0])
+      assert str(ps_2_sorted), str(terms[1])
+
+      assert np.allclose(cirq.unitary(ps_1), cirq.unitary(terms[0]))
+      assert np.allclose(cirq.unitary(ps_2_sorted), cirq.unitary(terms[1]))
+
+
 # Using the entries of table 1 of https://arxiv.org/abs/1804.09130 as golden values.
 @pytest.mark.parametrize(
     'boolean_expr,expected_pauli_sum',
